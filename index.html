@@ -3,72 +3,769 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CS2 Case Simulator</title>
-    <link rel="stylesheet" href="style.css">
+    <title>CS2 Case Simulator - Полная версия</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0c12;
+            color: #ddd;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        #app {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        /* Аутентификация */
+        #authScreen {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #1e1e2a;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #authScreen input, #authScreen button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: none;
+        }
+        #authScreen button {
+            background: #4caf50;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        /* Верхняя панель */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #1e1e2a;
+            padding: 12px 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .top-bar span, .top-bar button {
+            margin: 5px;
+        }
+        button {
+            background: #2c2c3a;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #3c3c4a;
+        }
+        .drop-list {
+            background: #11111a;
+            border-radius: 16px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .drop-list ul {
+            height: 120px;
+            overflow-y: auto;
+            list-style: none;
+            padding: 0;
+        }
+        .cases-grid, .inventory-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .case-card, .inventory-item {
+            background: #1e1e2a;
+            border-radius: 16px;
+            padding: 12px;
+            width: 200px;
+            text-align: center;
+            transition: 0.2s;
+            border: 1px solid #2a2a3a;
+        }
+        .case-card:hover {
+            transform: scale(1.02);
+            border-color: #ffaa00;
+        }
+        .case-card h3 {
+            margin: 0 0 6px;
+        }
+        .inventory-item {
+            width: 180px;
+        }
+        .admin-panel {
+            background: #331111;
+            border: 2px solid red;
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #1e1e2a;
+            padding: 20px;
+            border-radius: 16px;
+            width: 500px;
+            max-width: 90%;
+            color: white;
+        }
+        .crash-panel {
+            background: #16161f;
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .crash-multiplier {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffaa00;
+        }
+        .upgrade-select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 8px;
+        }
+        hr {
+            border-color: #2a2a3a;
+        }
+        .case-buttons button {
+            margin: 5px;
+        }
+    </style>
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 </head>
 <body>
-    <div id="app">
-        <!-- Аутентификация -->
-        <div id="authScreen">
-            <h2>Вход / Регистрация</h2>
-            <input type="text" id="loginInput" placeholder="Логин">
-            <input type="password" id="passwordInput" placeholder="Пароль (мин 6 символов, цифра)">
-            <button id="authBtn">Войти</button>
-            <div id="authError"></div>
+<div id="app">
+    <!-- Экран входа/регистрации -->
+    <div id="authScreen">
+        <h2>🔫 CS2 Case Simulator</h2>
+        <input type="text" id="loginInput" placeholder="Логин">
+        <input type="password" id="passwordInput" placeholder="Пароль (мин 6 символов + цифра)">
+        <button id="authBtn">Войти / Зарегистрироваться</button>
+        <button id="forgotPwdBtn" style="background:#555;">Забыли пароль?</button>
+        <div id="authError" style="color:red;"></div>
+    </div>
+
+    <!-- Игровой интерфейс (после входа) -->
+    <div id="gameScreen" style="display:none;">
+        <div class="top-bar">
+            <span>💰 Баланс: <strong id="balance">0</strong>$</span>
+            <span>👤 <span id="username"></span></span>
+            <button id="profileBtn">📊 Профиль</button>
+            <button id="logoutBtn">🚪 Выйти</button>
         </div>
 
-        <!-- Главный интерфейс (показывается после входа) -->
-        <div id="gameScreen" style="display:none;">
-            <div class="top-bar">
-                <span>Баланс: <span id="balance">0</span>$</span>
-                <span>👤 <span id="username"></span></span>
-                <button id="logoutBtn">Выйти</button>
-                <button id="profileBtn">Профиль</button>
-            </div>
-
-            <div class="drop-list">
-                <h3>Последние дропы:</h3>
-                <ul id="dropList"></ul>
-            </div>
-
-            <div class="case-shop">
-                <h2>Кейсы (от дешёвых к дорогим)</h2>
-                <div id="casesContainer"></div>
-            </div>
-
-            <div class="inventory">
-                <h2>Инвентарь</h2>
-                <div id="inventoryContainer"></div>
-            </div>
-
-            <div class="minigames">
-                <button id="clickerBtn">Кликер +1 (осталось <span id="clickerLeft">50</span>/50 сегодня)</button>
-                <button id="wheelBtn">🎡 Колесо фортуны (ежедневный бонус)</button>
-            </div>
-
-            <!-- Админ-панель (скрыта по умолчанию) -->
-            <div id="adminPanel" style="display:none; border:2px solid red; margin:10px; padding:10px;">
-                <h3>Админ-панель (PawPaw69)</h3>
-                <input type="text" id="adminUser" placeholder="Логин игрока">
-                <input type="number" id="adminMoney" placeholder="Сумма">
-                <button id="adminGiveMoney">Выдать деньги</button>
-            </div>
+        <!-- Дроп-лист -->
+        <div class="drop-list">
+            <h3>🎲 Живые дропы</h3>
+            <ul id="dropList"></ul>
         </div>
 
-        <!-- Модалка профиля -->
-        <div id="profileModal" style="display:none; position:fixed; background:white; top:20%; left:30%; padding:20px; border:1px solid black;">
-            <h3>Профиль</h3>
-            <p>Логин: <span id="profileLogin"></span></p>
-            <p>Открыто кейсов: <span id="casesOpened"></span></p>
-            <p>Апгрейдов сделано: <span id="upgradesDone"></span></p>
-            <p>Самый дорогой скин: <span id="bestSkin"></span> (из кейса <span id="bestSkinCase"></span>)</p>
+        <!-- Секция Crash -->
+        <div class="crash-panel">
+            <h3>💥 Игра CRASH</h3>
+            <div class="crash-multiplier" id="crashMultiplier">1.00x</div>
+            <input type="number" id="crashBet" placeholder="Ставка $" value="10" step="1">
+            <button id="crashStartBtn" style="background:#2e7d32;">🚀 Старт</button>
+            <button id="crashCashoutBtn" disabled style="background:#ff9800;">💰 Забрать</button>
+            <div id="crashStatus"></div>
+        </div>
+
+        <!-- Кейсы -->
+        <h2>📦 Открытие кейсов (сортировка по цене)</h2>
+        <div id="casesContainer" class="cases-grid"></div>
+
+        <!-- Мини-игры -->
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <button id="clickerBtn">🖱️ Кликер +1 (сегодня: <span id="clickerLeft">50</span>/50)</button>
+            <button id="wheelBtn">🎡 Колесо фортуны (ежедневный бонус)</button>
+            <button id="upgradeBtn">⬆️ UPGRADE (улучшить скин)</button>
+        </div>
+
+        <!-- Инвентарь -->
+        <h2>🎒 Инвентарь</h2>
+        <div id="inventoryContainer" class="inventory-grid"></div>
+
+        <!-- Админ-панель (только PawPaw69) -->
+        <div id="adminPanel" class="admin-panel" style="display:none;">
+            <h3>⚙️ Админ-панель</h3>
+            <input type="text" id="adminUser" placeholder="Логин игрока">
+            <input type="number" id="adminMoney" placeholder="Сумма $">
+            <button id="adminGiveMoney">💰 Выдать деньги</button>
+        </div>
+    </div>
+
+    <!-- Модалка профиля -->
+    <div id="profileModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>📋 Профиль</h3>
+            <p><strong>Логин:</strong> <span id="profileLogin"></span></p>
+            <p><strong>Email:</strong> <span id="profileEmail"></span> 
+                <button id="setEmailBtn">Привязать почту</button>
+            </p>
+            <p><strong>Открыто кейсов:</strong> <span id="casesOpened"></span></p>
+            <p><strong>Апгрейдов совершено:</strong> <span id="upgradesDone"></span></p>
+            <p><strong>Самый дорогой скин:</strong> <span id="bestSkin"></span> (из кейса <span id="bestSkinCase"></span>)</p>
             <button id="closeProfile">Закрыть</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Модалка Upgrade -->
+    <div id="upgradeModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>⬆️ Upgrade скина</h3>
+            <label>Ваш скин из инвентаря:</label>
+            <select id="upgradeFromSelect" class="upgrade-select"></select>
+            <label>Целевой скин (дороже):</label>
+            <select id="upgradeToSelect" class="upgrade-select"></select>
+            <p id="upgradeChanceText">Шанс: --%</p>
+            <button id="upgradeConfirmBtn" style="background:#4caf50;">Улучшить</button>
+            <button id="upgradeCancelBtn">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Модалка восстановления пароля -->
+    <div id="resetModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>🔐 Восстановление пароля</h3>
+            <input type="text" id="resetLogin" placeholder="Логин">
+            <button id="sendCodeBtn">Отправить код на почту</button>
+            <div id="resetStep2" style="display:none;">
+                <input type="text" id="verifCode" placeholder="Код из письма">
+                <input type="password" id="newPwd" placeholder="Новый пароль (6+ символов, цифра)">
+                <button id="resetPwdBtn">Сменить пароль</button>
+            </div>
+            <button id="closeResetBtn">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // -------------------- КОНФИГ FIREBASE (ЗАМЕНИТЬ НА СВОИ) --------------------
+    const firebaseConfig = {
+        apiKey: "ВАШ_API_KEY",
+        authDomain: "ВАШ_PROJECT.firebaseapp.com",
+        projectId: "ВАШ_PROJECT_ID",
+        storageBucket: "ВАШ_PROJECT.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "ВАШ_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // -------------------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ --------------------
+    let currentUser = null;      // { login, balance, inventory, stats, wheelLastDate, clickerLastDate, clickerCountToday, email, resetCode? }
+    let userDocRef = null;
+    let unsubscribeDrops = null;
+
+    // Состояния для Crash игры
+    let crashInterval = null;
+    let crashActive = false;
+    let crashMultiplier = 1;
+    let crashBetAmount = 0;
+
+    // -------------------- СПИСОК ВСЕХ СКИНОВ (50+) И КЕЙСОВ --------------------
+    // Генерация большого пула скинов CS:GO (реалистичные цены и износы)
+    const skinNames = [
+        "AK-47 | Redline", "AWP | Dragon Lore", "M4A4 | Howl", "Desert Eagle | Blaze", "USP-S | Kill Confirmed",
+        "Glock-18 | Fade", "Karambit | Doppler", "M9 Bayonet | Marble Fade", "Butterfly Knife | Tiger Tooth",
+        "SSG 08 | Blood in the Water", "P250 | Splash", "Five-SeveN | Neon Kimono", "M4A1-S | Icarus Fell",
+        "SCAR-20 | Splash Jam", "Tec-9 | Ice Cap", "MP7 | Nemesis", "UMP-45 | Primal Saber", "MAC-10 | Neon Rider",
+        "Galil AR | Cerberus", "FAMAS | Eye of Athena", "AUG | Akihabara Accept", "SG 553 | Integrale",
+        "P90 | Death by Kitty", "MP9 | Hot Snakes", "Nova | Antique", "XM1014 | Seasons", "MAG-7 | Cinquedea",
+        "Negev | Mjölnir", "M249 | Spectre", "Zeus x27 | Dragon Snore"
+    ];
+    const wears = ["FN", "MW", "FT", "WW", "BS"];
+    const wearPriceMultiplier = { "FN": 2.0, "MW": 1.5, "FT": 1.0, "WW": 0.7, "BS": 0.5 };
+    
+    function generateSkinsPool() {
+        let pool = [];
+        for (let name of skinNames) {
+            let basePrice = (Math.random() * 500 + 5).toFixed(2);
+            if (name.includes("Dragon Lore")) basePrice = 5000;
+            if (name.includes("Howl")) basePrice = 3000;
+            if (name.includes("Doppler") || name.includes("Marble")) basePrice = 800;
+            for (let wear of wears) {
+                let price = (parseFloat(basePrice) * wearPriceMultiplier[wear]).toFixed(2);
+                pool.push({
+                    id: name.replace(/\s+/g, '_') + '_' + wear,
+                    name: name,
+                    wear: wear,
+                    price: parseFloat(price)
+                });
+            }
+        }
+        // Добавим уникальный "Рука бога"
+        pool.push({ id: "godhand", name: "Рука бога", wear: "FN", price: 100000 });
+        return pool;
+    }
+    const allSkins = generateSkinsPool(); // более 150 предметов
+    
+    // Кейсы (сортировка по цене в UI)
+    const casesData = [
+        { id: "case_cheap", name: "Базовый кейс", price: 5, type: "normal", chanceToProfit: 0.45, items: allSkins.filter(s => s.price <= 20).slice(0, 30) },
+        { id: "case_medium", name: "Стандартный кейс", price: 25, type: "normal", chanceToProfit: 0.40, items: allSkins.filter(s => s.price > 10 && s.price <= 100).slice(0, 40) },
+        { id: "case_rare", name: "Редкий кейс", price: 100, type: "normal", chanceToProfit: 0.35, items: allSkins.filter(s => s.price > 50 && s.price <= 300).slice(0, 40) },
+        { id: "case_custom1", name: "Кастомный 🔥", price: 250, type: "custom", chanceToProfit: 0.30, items: allSkins.filter(s => s.price > 100 && s.price <= 800).slice(0, 50) },
+        { id: "case_legendary", name: "Легендарный кейс", price: 500, type: "normal", chanceToProfit: 0.25, items: allSkins.filter(s => s.price >= 200 && s.price <= 2000).slice(0, 40) },
+        { id: "case_god", name: "Кейс бога", price: 1500, type: "custom", chanceToProfit: 0.20, items: allSkins.filter(s => s.price >= 500).slice(0, 30) },
+        { id: "case_30000", name: "💎 Кейс за 30000$", price: 30000, type: "special", chanceToProfit: 0.05, items: [
+            ...allSkins.filter(s => s.name.includes("Sand") || s.price < 1).slice(0, 20).map(s => ({...s, price: 0.1})),
+            { id: "godhand", name: "Рука бога", wear: "FN", price: 100000 }
+        ]}
+    ];
+    // Дополним шансы для предметов в кейсе (равномерное распределение для простоты, но можно настроить)
+    casesData.forEach(c => {
+        if (!c.itemsChances) {
+            const total = c.items.length;
+            c.items = c.items.map((it, idx) => ({ ...it, chance: 1 / total }));
+        }
+    });
+
+    // -------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --------------------
+    function getRandomItemFromCase(caseData) {
+        const items = caseData.items;
+        const totalChance = items.reduce((s, i) => s + i.chance, 0);
+        let rand = Math.random() * totalChance;
+        let acc = 0;
+        for (let item of items) {
+            acc += item.chance;
+            if (rand <= acc) return { ...item };
+        }
+        return items[0];
+    }
+    
+    async function addToDropList(text) {
+        await db.collection("drops").add({ text, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    
+    function subscribeToDropList() {
+        if (unsubscribeDrops) unsubscribeDrops();
+        const unsub = db.collection("drops").orderBy("timestamp", "desc").limit(50).onSnapshot(snap => {
+            const list = document.getElementById("dropList");
+            if (list) {
+                list.innerHTML = "";
+                snap.forEach(doc => {
+                    let li = document.createElement("li");
+                    li.textContent = doc.data().text;
+                    list.appendChild(li);
+                });
+            }
+        });
+        unsubscribeDrops = unsub;
+    }
+    
+    // Стакинг инвентаря при сохранении
+    function mergeInventory(currentInv, newItemsArray) {
+        let inv = [...currentInv];
+        for (let newItem of newItemsArray) {
+            const existing = inv.find(i => i.id === newItem.id && i.wear === newItem.wear);
+            if (existing) existing.count = (existing.count || 1) + (newItem.count || 1);
+            else inv.push({ ...newItem, count: newItem.count || 1 });
+        }
+        return inv;
+    }
+    
+    async function updateUserStatsAndInventory(additionalItems = [], balanceDelta = 0, casesIncrement = 0, upgradeIncrement = 0, bestSkinUpdate = null) {
+        if (!currentUser) return;
+        let newBalance = (currentUser.balance || 0) + balanceDelta;
+        let newInv = mergeInventory(currentUser.inventory || [], additionalItems);
+        let newStats = { ...currentUser.stats };
+        newStats.casesOpened = (newStats.casesOpened || 0) + casesIncrement;
+        newStats.upgradesDone = (newStats.upgradesDone || 0) + upgradeIncrement;
+        if (bestSkinUpdate && (!newStats.bestSkin || bestSkinUpdate.price > newStats.bestSkin.price)) {
+            newStats.bestSkin = bestSkinUpdate;
+            newStats.bestSkinCase = bestSkinUpdate.caseName || "unknown";
+        }
+        await userDocRef.update({
+            balance: newBalance,
+            inventory: newInv,
+            stats: newStats
+        });
+    }
+    
+    // Обновление UI
+    async function refreshUI() {
+        if (!currentUser) return;
+        document.getElementById("balance").innerText = currentUser.balance?.toFixed(2) || 0;
+        document.getElementById("username").innerText = currentUser.login;
+        let left = 50 - (currentUser.clickerCountToday || 0);
+        document.getElementById("clickerLeft").innerText = left >= 0 ? left : 0;
+        renderInventory();
+        renderCases();
+    }
+    
+    function renderInventory() {
+        const container = document.getElementById("inventoryContainer");
+        if (!container) return;
+        const inv = currentUser.inventory || [];
+        container.innerHTML = inv.map(item => `
+            <div class="inventory-item">
+                <b>${item.name}</b> (${item.wear})<br>
+                💵 ${item.price}$<br>
+                📦 x${item.count || 1}<br>
+                <button onclick="sellSkin('${item.id}', '${item.wear}')">Продать 1</button>
+                <button onclick="sellSkin('${item.id}', '${item.wear}', true)">Продать все</button>
+            </div>
+        `).join("");
+    }
+    
+    window.sellSkin = async (skinId, wear, sellAll = false) => {
+        if (!currentUser) return;
+        let inv = [...(currentUser.inventory || [])];
+        let idx = inv.findIndex(i => i.id === skinId && i.wear === wear);
+        if (idx === -1) return;
+        let item = inv[idx];
+        let sellCount = sellAll ? item.count : 1;
+        let totalPrice = item.price * sellCount;
+        if (item.count <= sellCount) inv.splice(idx, 1);
+        else item.count -= sellCount;
+        await userDocRef.update({
+            inventory: inv,
+            balance: firebase.firestore.FieldValue.increment(totalPrice)
+        });
+        addToDropList(`${currentUser.login} продал ${item.name} x${sellCount} за ${totalPrice}$`);
+    };
+    
+    function renderCases() {
+        const container = document.getElementById("casesContainer");
+        if (!container) return;
+        const sorted = [...casesData].sort((a,b) => a.price - b.price);
+        container.innerHTML = sorted.map(c => `
+            <div class="case-card">
+                <h3>${c.name}</h3>
+                <p>💰 ${c.price}$</p>
+                <p>📈 шанс окупа: ${(c.chanceToProfit * 100).toFixed(0)}%</p>
+                <div class="case-buttons">
+                    <button onclick="openCaseCount('${c.id}', 1)">1x</button>
+                    <button onclick="openCaseCount('${c.id}', 5)">5x</button>
+                    <button onclick="openCaseCount('${c.id}', 10)">10x</button>
+                </div>
+            </div>
+        `).join("");
+    }
+    
+    window.openCaseCount = async (caseId, count) => {
+        const caseData = casesData.find(c => c.id === caseId);
+        if (!caseData) return;
+        let totalCost = caseData.price * count;
+        if (currentUser.balance < totalCost) {
+            alert("Недостаточно денег!");
+            return;
+        }
+        let drops = [];
+        let profitFlag = false;
+        for (let i = 0; i < count; i++) {
+            let drop = getRandomItemFromCase(caseData);
+            drops.push(drop);
+            if (drop.price >= caseData.price) profitFlag = true;
+        }
+        // Шанс окупаемости для кастомных кейсов (общая логика)
+        if (caseData.type === "custom") {
+            let success = Math.random() < caseData.chanceToProfit;
+            if (success && drops.length > 0) {
+                // Добавим бонус: повысим ценность одного дропа (симуляция окупа)
+                drops[0].price = Math.max(drops[0].price, caseData.price * 1.2);
+            }
+        } else if (caseData.type === "normal") {
+            // обычные кейсы имеют меньший контроль, но все же
+            if (Math.random() < caseData.chanceToProfit && drops.length) {
+                drops[0].price *= 1.2;
+            }
+        }
+        // Обновление инвентаря и баланса
+        await updateUserStatsAndInventory(drops, -totalCost, count, 0, null);
+        for (let d of drops) {
+            addToDropList(`${currentUser.login} открыл ${caseData.name} и получил ${d.name} (${d.price}$)`);
+        }
+        alert(`Открыто ${count} кейсов! Скины добавлены в инвентарь.`);
+    };
+    
+    // -------------------- CRASH ИГРА --------------------
+    function stopCrash() {
+        if (crashInterval) clearInterval(crashInterval);
+        crashActive = false;
+        document.getElementById("crashStartBtn").disabled = false;
+        document.getElementById("crashCashoutBtn").disabled = true;
+        document.getElementById("crashMultiplier").innerText = "1.00x";
+        document.getElementById("crashStatus").innerText = "";
+    }
+    
+    async function crashCashout() {
+        if (!crashActive) return;
+        clearInterval(crashInterval);
+        crashActive = false;
+        let win = crashBetAmount * crashMultiplier;
+        await userDocRef.update({ balance: firebase.firestore.FieldValue.increment(win) });
+        addToDropList(`${currentUser.login} забрал ${win}$ в Crash (x${crashMultiplier.toFixed(2)})`);
+        document.getElementById("crashStatus").innerText = `✅ Выиграно ${win.toFixed(2)}$!`;
+        document.getElementById("crashStartBtn").disabled = false;
+        document.getElementById("crashCashoutBtn").disabled = true;
+    }
+    
+    function startCrash() {
+        if (crashActive) return;
+        let bet = parseFloat(document.getElementById("crashBet").value);
+        if (isNaN(bet) || bet <= 0 || bet > currentUser.balance) {
+            alert("Некорректная ставка или не хватает денег");
+            return;
+        }
+        crashBetAmount = bet;
+        currentUser.balance -= bet;
+        userDocRef.update({ balance: currentUser.balance }).then(() => refreshUI());
+        crashMultiplier = 1;
+        crashActive = true;
+        let crashPoint = 1 + Math.random() * 10; // случайный краш от 1 до 11х
+        document.getElementById("crashStartBtn").disabled = true;
+        document.getElementById("crashCashoutBtn").disabled = false;
+        let step = 0;
+        crashInterval = setInterval(() => {
+            if (!crashActive) return;
+            step += 0.03;
+            crashMultiplier = 1 + step;
+            document.getElementById("crashMultiplier").innerText = crashMultiplier.toFixed(2) + "x";
+            if (crashMultiplier >= crashPoint) {
+                clearInterval(crashInterval);
+                crashActive = false;
+                document.getElementById("crashStatus").innerText = `💥 КРАХ! Вы проиграли ${crashBetAmount}$`;
+                document.getElementById("crashStartBtn").disabled = false;
+                document.getElementById("crashCashoutBtn").disabled = true;
+                addToDropList(`${currentUser.login} проиграл в Crash ${crashBetAmount}$`);
+            }
+        }, 100);
+        window.crashCashoutHandler = crashCashout;
+        document.getElementById("crashCashoutBtn").onclick = () => crashCashout();
+    }
+    
+    // -------------------- UPGRADE --------------------
+    function openUpgradeModal() {
+        const fromSelect = document.getElementById("upgradeFromSelect");
+        const toSelect = document.getElementById("upgradeToSelect");
+        const inv = currentUser.inventory || [];
+        fromSelect.innerHTML = "<option value=''>-- выберите скин --</option>" + inv.map(item => `<option value='${item.id}|${item.wear}' data-price='${item.price}'>${item.name} (${item.wear}) x${item.count} - ${item.price}$</option>`).join("");
+        toSelect.innerHTML = "<option value=''>-- целевой скин --</option>" + allSkins.map(skin => `<option value='${skin.id}|${skin.wear}' data-price='${skin.price}'>${skin.name} (${skin.wear}) - ${skin.price}$</option>`).join("");
+        document.getElementById("upgradeModal").style.display = "flex";
+        document.getElementById("upgradeChanceText").innerText = "Шанс: --";
+        function recalcChance() {
+            let fromOpt = fromSelect.options[fromSelect.selectedIndex];
+            let toOpt = toSelect.options[toSelect.selectedIndex];
+            if (!fromOpt.value || !toOpt.value) return;
+            let fromPrice = parseFloat(fromOpt.getAttribute("data-price"));
+            let toPrice = parseFloat(toOpt.getAttribute("data-price"));
+            if (toPrice <= fromPrice) {
+                document.getElementById("upgradeChanceText").innerText = "⚠️ Целевой скин должен быть дороже!";
+                return;
+            }
+            let chance = Math.max(0.05, Math.min(0.9, 0.5 * (fromPrice / toPrice)));
+            document.getElementById("upgradeChanceText").innerText = `Шанс успеха: ${(chance*100).toFixed(1)}%`;
+        }
+        fromSelect.onchange = recalcChance;
+        toSelect.onchange = recalcChance;
+        document.getElementById("upgradeConfirmBtn").onclick = async () => {
+            let fromVal = fromSelect.value;
+            let toVal = toSelect.value;
+            if (!fromVal || !toVal) return;
+            let [fromId, fromWear] = fromVal.split("|");
+            let [toId, toWear] = toVal.split("|");
+            let fromItem = (currentUser.inventory || []).find(i => i.id === fromId && i.wear === fromWear);
+            if (!fromItem || fromItem.count < 1) { alert("Недостаточно скинов"); return; }
+            let targetSkin = allSkins.find(s => s.id === toId && s.wear === toWear);
+            if (!targetSkin) return;
+            if (targetSkin.price <= fromItem.price) { alert("Целевой скин не дороже исходного"); return; }
+            let chance = 0.5 * (fromItem.price / targetSkin.price);
+            let success = Math.random() < chance;
+            let newInv = [...currentUser.inventory];
+            let idx = newInv.findIndex(i => i.id === fromId && i.wear === fromWear);
+            if (newInv[idx].count === 1) newInv.splice(idx, 1);
+            else newInv[idx].count--;
+            if (success) {
+                newInv = mergeInventory(newInv, [{ ...targetSkin, count: 1 }]);
+                addToDropList(`${currentUser.login} улучшил ${fromItem.name} → ${targetSkin.name}!`);
+                alert(`Успех! Получен ${targetSkin.name}`);
+            } else {
+                addToDropList(`${currentUser.login} не смог улучшить ${fromItem.name} — скин сгорел.`);
+                alert("Неудача! Скин утерян.");
+            }
+            await userDocRef.update({ inventory: newInv, 'stats.upgradesDone': firebase.firestore.FieldValue.increment(1) });
+            document.getElementById("upgradeModal").style.display = "none";
+            refreshUI();
+        };
+        document.getElementById("upgradeCancelBtn").onclick = () => document.getElementById("upgradeModal").style.display = "none";
+    }
+    
+    // -------------------- КОЛЕСО ФОРТУНЫ --------------------
+    async function spinWheel() {
+        const last = currentUser.wheelLastDate;
+        const today = new Date().toDateString();
+        if (last === today) { alert("Бонус уже получен сегодня!"); return; }
+        const sectors = ["Деньги", "Скин", "Кейс"];
+        const res = sectors[Math.floor(Math.random() * 3)];
+        let rewardMsg = "";
+        if (res === "Деньги") {
+            let amt = Math.floor(Math.random() * 1000) + 10;
+            await userDocRef.update({ balance: firebase.firestore.FieldValue.increment(amt) });
+            rewardMsg = `${amt}$`;
+        } else if (res === "Скин") {
+            let randomSkin = allSkins[Math.floor(Math.random() * allSkins.length)];
+            await updateUserStatsAndInventory([randomSkin], 0, 0, 0, null);
+            rewardMsg = `${randomSkin.name} (${randomSkin.price}$)`;
+        } else {
+            let freeCase = casesData[Math.floor(Math.random() * casesData.length)];
+            let drop = getRandomItemFromCase(freeCase);
+            await updateUserStatsAndInventory([drop], 0, 1, 0, null);
+            rewardMsg = `бесплатный кейс ${freeCase.name} → ${drop.name}`;
+        }
+        await userDocRef.update({ wheelLastDate: today });
+        alert(`🎡 Выпало: ${res}! Вы получили: ${rewardMsg}`);
+        refreshUI();
+    }
+    
+    // -------------------- КЛИКЕР --------------------
+    async function clicker() {
+        let today = new Date().toDateString();
+        let count = currentUser.clickerCountToday || 0;
+        if (currentUser.clickerLastDate !== today) count = 0;
+        if (count >= 50) { alert("Лимит 50 кликов в день"); return; }
+        count++;
+        await userDocRef.update({
+            balance: firebase.firestore.FieldValue.increment(1),
+            clickerCountToday: count,
+            clickerLastDate: today
+        });
+        refreshUI();
+    }
+    
+    // -------------------- ПРОФИЛЬ И ВОССТАНОВЛЕНИЕ ПАРОЛЯ --------------------
+    async function showProfile() {
+        document.getElementById("profileLogin").innerText = currentUser.login;
+        document.getElementById("profileEmail").innerText = currentUser.email || "не указан";
+        document.getElementById("casesOpened").innerText = currentUser.stats?.casesOpened || 0;
+        document.getElementById("upgradesDone").innerText = currentUser.stats?.upgradesDone || 0;
+        let best = currentUser.stats?.bestSkin;
+        document.getElementById("bestSkin").innerText = best ? `${best.name} (${best.price}$)` : "нет";
+        document.getElementById("bestSkinCase").innerText = currentUser.stats?.bestSkinCase || "—";
+        document.getElementById("profileModal").style.display = "flex";
+        document.getElementById("setEmailBtn").onclick = async () => {
+            let email = prompt("Введите email для привязки:");
+            if (email && email.includes("@")) {
+                await userDocRef.update({ email: email });
+                alert("Email сохранён");
+                showProfile();
+            } else alert("Неверный email");
+        };
+    }
+    
+    // Восстановление пароля (демо-симуляция)
+    let resetCodeStore = {};
+    document.getElementById("forgotPwdBtn")?.addEventListener("click", () => {
+        document.getElementById("resetModal").style.display = "flex";
+    });
+    document.getElementById("sendCodeBtn")?.addEventListener("click", async () => {
+        let login = document.getElementById("resetLogin").value.trim();
+        let userSnap = await db.collection("users").doc(login).get();
+        if (!userSnap.exists) { alert("Пользователь не найден"); return; }
+        let userEmail = userSnap.data().email;
+        if (!userEmail) { alert("У пользователя не привязан email. Сначала привяжите в профиле."); return; }
+        let code = Math.floor(100000 + Math.random() * 900000);
+        resetCodeStore[login] = code;
+        alert(`Имитация отправки кода на ${userEmail}: ваш код ${code}`);
+        document.getElementById("resetStep2").style.display = "block";
+    });
+    document.getElementById("resetPwdBtn")?.addEventListener("click", async () => {
+        let login = document.getElementById("resetLogin").value.trim();
+        let code = document.getElementById("verifCode").value.trim();
+        let newPwd = document.getElementById("newPwd").value;
+        if (resetCodeStore[login] != code) { alert("Неверный код"); return; }
+        if (newPwd.length < 6 || !/\d/.test(newPwd)) { alert("Пароль: мин 6 символов и цифра"); return; }
+        await db.collection("users").doc(login).update({ password: newPwd });
+        alert("Пароль изменён! Теперь войдите с новым паролем.");
+        document.getElementById("resetModal").style.display = "none";
+    });
+    document.getElementById("closeResetBtn")?.addEventListener("click", () => {
+        document.getElementById("resetModal").style.display = "none";
+    });
+    
+    // -------------------- АУТЕНТИФИКАЦИЯ --------------------
+    async function loginOrRegister() {
+        const login = document.getElementById("loginInput").value.trim();
+        const pwd = document.getElementById("passwordInput").value;
+        const errDiv = document.getElementById("authError");
+        if (!login || !pwd) { errDiv.innerText = "Заполните поля"; return; }
+        if (pwd.length < 6 || !/\d/.test(pwd)) { errDiv.innerText = "Пароль: 6+ символов и цифра"; return; }
+        const userDoc = db.collection("users").doc(login);
+        const doc = await userDoc.get();
+        if (doc.exists) {
+            if (doc.data().password !== pwd) { errDiv.innerText = "Неверный пароль"; return; }
+            currentUser = { login, ...doc.data() };
+        } else {
+            const newUser = {
+                login, password: pwd, balance: 0, inventory: [],
+                stats: { casesOpened: 0, upgradesDone: 0, bestSkin: null, bestSkinCase: null },
+                clickerLastDate: null, clickerCountToday: 0, wheelLastDate: null, email: null
+            };
+            await userDoc.set(newUser);
+            currentUser = newUser;
+        }
+        userDocRef = userDoc;
+        userDoc.onSnapshot(snap => {
+            if (snap.exists) { currentUser = { login, ...snap.data() }; refreshUI(); }
+        });
+        subscribeToDropList();
+        document.getElementById("authScreen").style.display = "none";
+        document.getElementById("gameScreen").style.display = "block";
+        refreshUI();
+        // Админ-панель
+        const adminDiv = document.getElementById("adminPanel");
+        if (login === "PawPaw69") adminDiv.style.display = "block";
+        else adminDiv.style.display = "none";
+        document.getElementById("adminGiveMoney").onclick = async () => {
+            let target = document.getElementById("adminUser").value.trim();
+            let amount = parseFloat(document.getElementById("adminMoney").value);
+            if (currentUser.login !== "PawPaw69") return;
+            await db.collection("users").doc(target).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+            addToDropList(`Админ выдал ${amount}$ игроку ${target}`);
+            alert(`Выдано ${amount}$`);
+        };
+        document.getElementById("crashStartBtn").onclick = startCrash;
+        document.getElementById("clickerBtn").onclick = clicker;
+        document.getElementById("wheelBtn").onclick = spinWheel;
+        document.getElementById("upgradeBtn").onclick = openUpgradeModal;
+        document.getElementById("profileBtn").onclick = showProfile;
+        document.getElementById("closeProfile").onclick = () => document.getElementById("profileModal").style.display = "none";
+        document.getElementById("logoutBtn").onclick = () => {
+            if (unsubscribeDrops) unsubscribeDrops();
+            currentUser = null;
+            document.getElementById("authScreen").style.display = "block";
+            document.getElementById("gameScreen").style.display = "none";
+        };
+    }
+    
+    document.getElementById("authBtn").addEventListener("click", loginOrRegister);
+</script>
 </body>
 </html>
