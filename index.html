@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS2 Case Simulator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Аутентификация -->
+        <div id="authScreen">
+            <h2>Вход / Регистрация</h2>
+            <input type="text" id="loginInput" placeholder="Логин">
+            <input type="password" id="passwordInput" placeholder="Пароль (мин 6 символов, цифра)">
+            <button id="authBtn">Войти</button>
+            <div id="authError"></div>
+        </div>
+
+        <!-- Главный интерфейс (показывается после входа) -->
+        <div id="gameScreen" style="display:none;">
+            <div class="top-bar">
+                <span>Баланс: <span id="balance">0</span>$</span>
+                <span>👤 <span id="username"></span></span>
+                <button id="logoutBtn">Выйти</button>
+                <button id="profileBtn">Профиль</button>
+            </div>
+
+            <div class="drop-list">
+                <h3>Последние дропы:</h3>
+                <ul id="dropList"></ul>
+            </div>
+
+            <div class="case-shop">
+                <h2>Кейсы (от дешёвых к дорогим)</h2>
+                <div id="casesContainer"></div>
+            </div>
+
+            <div class="inventory">
+                <h2>Инвентарь</h2>
+                <div id="inventoryContainer"></div>
+            </div>
+
+            <div class="minigames">
+                <button id="clickerBtn">Кликер +1 (осталось <span id="clickerLeft">50</span>/50 сегодня)</button>
+                <button id="wheelBtn">🎡 Колесо фортуны (ежедневный бонус)</button>
+            </div>
+
+            <!-- Админ-панель (скрыта по умолчанию) -->
+            <div id="adminPanel" style="display:none; border:2px solid red; margin:10px; padding:10px;">
+                <h3>Админ-панель (PawPaw69)</h3>
+                <input type="text" id="adminUser" placeholder="Логин игрока">
+                <input type="number" id="adminMoney" placeholder="Сумма">
+                <button id="adminGiveMoney">Выдать деньги</button>
+            </div>
+        </div>
+
+        <!-- Модалка профиля -->
+        <div id="profileModal" style="display:none; position:fixed; background:white; top:20%; left:30%; padding:20px; border:1px solid black;">
+            <h3>Профиль</h3>
+            <p>Логин: <span id="profileLogin"></span></p>
+            <p>Открыто кейсов: <span id="casesOpened"></span></p>
+            <p>Апгрейдов сделано: <span id="upgradesDone"></span></p>
+            <p>Самый дорогой скин: <span id="bestSkin"></span> (из кейса <span id="bestSkinCase"></span>)</p>
+            <button id="closeProfile">Закрыть</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
