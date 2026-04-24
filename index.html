@@ -268,12 +268,13 @@
 <script>
     // -------------------- КОНФИГ FIREBASE (ЗАМЕНИТЬ НА СВОИ) --------------------
     const firebaseConfig = {
-    apiKey: "AIzaSyAGCiEd7h4p4SLenN_PCHd2ji8NFoQ2zNI",
-    authDomain: "pawpawcasesimulator.firebaseapp.com",
-    projectId: "pawpawcasesimulator",
-    storageBucket: "pawpawcasesimulator.firebasestorage.app",
-    messagingSenderId: "261385601567",
-    appId: "1:261385601567:web:eb64aeb22b6a0326670b2a"
+        apiKey: "AIzaSyAGCiEd7h4p4SLenN_PCHd2ji8NFoQ2zNI",
+        authDomain: "pawpawcasesimulator.firebaseapp.com",
+        projectId: "pawpawcasesimulator",
+        storageBucket: "pawpawcasesimulator.firebasestorage.app",
+        messagingSenderId: "261385601567",
+        appId: "1:261385601567:web:eb64aeb22b6a0326670b2a",
+        databaseURL: "https://pawpawcasesimulator-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
