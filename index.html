@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>PawPaw Case Simulator | Ultra Edition</title>
+    <title>PawPaw Case Simulator | Pro Selection</title>
     <style>
         * {
             margin: 0;
@@ -17,7 +17,6 @@
             padding: 18px;
             color: #edeff7;
         }
-        /* глосси */
         .glass-card {
             background: rgba(18, 22, 40, 0.65);
             backdrop-filter: blur(14px);
@@ -103,7 +102,6 @@
             from { opacity: 0; transform: translateY(10px);}
             to { opacity: 1; transform: translateY(0);}
         }
-        /* инвентарь */
         .inventory-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -121,8 +119,6 @@
         .skin-wear { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; }
         .skin-price { color: #7ed6a3; margin: 8px 0; font-weight: bold; }
         .sell-btn { width: 100%; background: #3f6b2b; margin-top: 8px; }
-
-        /* кейсы */
         .cases-container {
             display: flex;
             flex-wrap: wrap;
@@ -141,10 +137,7 @@
         }
         .case-card:hover { transform: scale(1.02) translateY(-6px); border-color: #ffb347; box-shadow: 0 20px 30px -8px black; }
         .case-price { color: #ffc857; font-size: 1.5rem; font-weight: bold; margin: 8px 0; }
-        .case-buttons { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 12px; }
-        .case-qty-btn { background: #2e3450; padding: 4px 10px; font-size: 0.8rem; min-width: 38px; }
-
-        /* модалка результатов */
+        /* модалки */
         .modal {
             display: none;
             position: fixed;
@@ -169,6 +162,25 @@
         .result-list { max-height: 350px; overflow-y: auto; margin: 20px 0; text-align: left; }
         .result-item { background: #1e233b; margin: 8px 0; padding: 10px; border-radius: 24px; border-left: 5px solid gold; }
         .close-btn { background: #ffb347; color: black; margin-top: 12px; }
+        .qty-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .qty-btn {
+            background: #2e3450;
+            padding: 10px 16px;
+            min-width: 55px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .qty-btn.active-qty {
+            background: #ffb347;
+            color: #0a0c16;
+            box-shadow: 0 0 8px orange;
+        }
         input, select { background: #1e233b; border: none; padding: 10px; border-radius: 40px; color: white; }
         .admin-section { border: 2px solid #ffaa33; }
         .drop-feed { background: #0a0d18aa; border-radius: 28px; max-height: 340px; overflow-y: auto; padding: 16px; }
@@ -182,7 +194,6 @@
 </head>
 <body>
 <div class="app" id="app">
-    <!-- АВТОРИЗАЦИЯ -->
     <div id="authScreen" style="text-align:center; margin-top:80px;">
         <div class="glass-card" style="padding: 40px; max-width: 420px; margin:auto;">
             <h2>🐾 PawPaw Case Simulator</h2>
@@ -194,7 +205,6 @@
         </div>
     </div>
 
-    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
     <div id="mainApp" style="display:none;">
         <div class="header">
             <div class="balance">💰 <span id="balanceSpan">0</span> $</div>
@@ -212,7 +222,7 @@
         </div>
 
         <div id="inventory" class="panel"><h3>🎒 Инвентарь</h3><button id="sellAllBtn">Продать всё</button><div id="inventoryList" class="inventory-grid"></div></div>
-        <div id="cases" class="panel"><h3>🔑 Кейсы (нажми на количество, чтобы открыть)</h3><div id="casesList" class="cases-container"></div></div>
+        <div id="cases" class="panel"><h3>🔑 Нажми на любой кейс, чтобы выбрать количество открытий</h3><div id="casesList" class="cases-container"></div></div>
         <div id="crash" class="panel"><div class="glass-card" style="padding:24px"><h3>💥 Crash Game</h3><p>Множитель: <span id="crashMultiplier">1.00</span>x</p><input type="number" id="crashBet" placeholder="Ставка $" value="10"><button id="crashStartBtn">🎲 Старт</button><button id="crashCashoutBtn" disabled>💰 Забрать</button><div id="crashStatus"></div></div></div>
         <div id="upgrade" class="panel"><div class="glass-card" style="padding:24px"><h3>✨ Upgrade скина</h3><select id="upgradeFromSelect"></select><select id="upgradeToSelect"></select><button id="upgradeBtn">🔮 Улучшить (риск)</button><div id="upgradeResult"></div></div></div>
         <div id="wheel" class="panel"><div class="glass-card" style="padding:24px"><h3>🎡 Колесо фортуны</h3><button id="spinWheelBtn">Крутить!</button><div id="wheelResult"></div><div id="extraSpinsInfo"></div></div></div>
@@ -222,8 +232,29 @@
     </div>
 </div>
 
-<!-- МОДАЛКА РЕЗУЛЬТАТОВ ОТКРЫТИЯ -->
-<div id="resultModal" class="modal"><div class="modal-content"><h2>🎁 Выпавшие предметы</h2><div id="resultItemsList" class="result-list"></div><button id="resultModalClose" class="close-btn">Закрыть</button></div></div>
+<!-- Модалка выбора количества кейсов -->
+<div id="quantityModal" class="modal">
+    <div class="modal-content">
+        <h2>📦 <span id="modalCaseName"></span></h2>
+        <p>Цена за 1 кейс: <strong id="modalCasePrice"></strong> $</p>
+        <div class="qty-buttons" id="qtyButtonsContainer">
+            <!-- динамические кнопки 1-10 -->
+        </div>
+        <div style="margin-top: 10px;">
+            <button id="confirmOpenBtn" style="background:#ffb347; color:black;">🔥 ОТКРЫТЬ</button>
+            <button id="cancelModalBtn">❌ Отмена</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка результатов -->
+<div id="resultModal" class="modal">
+    <div class="modal-content">
+        <h2>🎁 Выпавшие предметы</h2>
+        <div id="resultItemsList" class="result-list"></div>
+        <button id="resultModalClose" class="close-btn">Закрыть</button>
+    </div>
+</div>
 
 <script>
     // ---------- FIREBASE ----------
@@ -243,6 +274,8 @@
     let inventoryCache = [];
     let allSkinsDB = [];
     let casesDB = [];
+    let selectedCaseForOpening = null;
+    let selectedQuantity = 1;
 
     // ----- ГЕНЕРАТОР 90+ СКИНОВ -----
     const weapons = ["AK-47","M4A4","AWP","USP-S","Glock-18","P250","Desert Eagle","SSG 08","FAMAS","Galil AR","MP9","MAC-10","P90","UMP-45","Five-SeveN","Tec-9","Nova","XM1014","MAG-7","SCAR-20","G3SG1","MP7","MP5-SD","Negev","M249","PP-Bizon","Dual Berettas","CZ75-Auto","R8 Revolver"];
@@ -253,7 +286,6 @@
         let wears = ["FN","MW","FT","WW","BS"];
         let wear = wears[i % wears.length];
         let basePrice = (i % 10 === 0 ? 0.03 : i % 5 === 0 ? 0.15 : i % 3 === 0 ? 2.5 : i % 7 === 0 ? 45 : i % 4 === 0 ? 120 : 8.5);
-        // разные цены
         if(skin === "Dragon Lore") basePrice = 12500;
         if(skin === "Howl") basePrice = 3200;
         if(skin === "Emerald") basePrice = 18000;
@@ -262,12 +294,10 @@
         price = Math.max(0.01, Math.round(price*100)/100);
         allSkinsDB.push({ id: `skin_${i}`, fullName: `${weapon} | ${skin}`, wear: wear, price: price });
     }
-    // добавим руку бога
     const godHand = { id: "god_hand", fullName: "🌟 РУКА БОГА 🌟", wear: "LEGEND", price: 100000 };
     allSkinsDB.push(godHand);
 
-    // ----- КЕЙСЫ С БАЛАНСОМ (окупаемость зависит от цены) -----
-    // функция для генерации весов: чем дороже кейс, тем шанс дорогого выше + окупаемость выше
+    // ----- КЕЙСЫ С БАЛАНСОМ -----
     function makeCase(name, price, specialPool = null, highTierChanceBoost = 1.0) {
         let pool = specialPool ? specialPool : allSkinsDB.filter(s => s.id !== "god_hand");
         let items = pool.map(skin => {
@@ -278,7 +308,6 @@
             else if (skin.price < 500) weight = 12;
             else if (skin.price < 5000) weight = 3;
             else weight = 0.5;
-            // для дорогих кейсов повышаем шанс дорогих скинов
             if (price >= 100) weight = weight * (1 + (price/5000));
             if (highTierChanceBoost > 1) weight = weight * highTierChanceBoost;
             return { ...skin, weight: Math.max(0.1, weight) };
@@ -286,24 +315,20 @@
         return { name, price, items };
     }
 
-    // бюджетные кейсы (1-3$)
     let budgetCase1 = makeCase("💸 Бюджетный блиц", 1.2, allSkinsDB.filter(s=>s.price<=5 && s.id!=="god_hand"), 0.6);
     let budgetCase2 = makeCase("🔫 Патронтаж", 2.5, allSkinsDB.filter(s=>s.price<=15 && s.id!=="god_hand"), 0.7);
     let budgetCase3 = makeCase("🎲 Удача новичка", 3.0, allSkinsDB.filter(s=>s.price<=30 && s.id!=="god_hand"), 0.8);
-    // средние
     let mediumCase = makeCase("⚙️ Стальной арсенал", 9.99, allSkinsDB.filter(s=>s.price<=200 && s.id!=="god_hand"), 1.0);
     let awpCase = makeCase("🎯 Снайперский прицел", 19.99, allSkinsDB.filter(s=>s.fullName.includes("AWP") && s.id!=="god_hand"), 1.2);
     let customCase = makeCase("💎 Кастомный элит", 130, allSkinsDB.filter(s=>s.id!=="god_hand"), 1.8);
     let legendaryCase = makeCase("🏆 Легендарный арсенал", 499, allSkinsDB.filter(s=>s.price>=80 && s.id!=="god_hand"), 2.5);
-    // кейс бога (только рука бога и мусор)
+    let ultraCase = makeCase("💀 Ультиматум", 1250, allSkinsDB.filter(s=>s.price>=200 && s.id!=="god_hand"), 3.2);
     let godCaseItems = allSkinsDB.filter(s=>s.price <= 0.2 && s.id!=="god_hand").concat([godHand]);
     let godCase = {
         name: "👁️ КЕЙС БОГА 👁️",
         price: 30000,
         items: godCaseItems.map(s => ({ ...s, weight: s.id === "god_hand" ? 0.1 : 99.9 }))
     };
-    // экстрадорогой
-    let ultraCase = makeCase("💀 Ультиматум", 1250, allSkinsDB.filter(s=>s.price>=200 && s.id!=="god_hand"), 3.2);
     casesDB = [budgetCase1, budgetCase2, budgetCase3, mediumCase, awpCase, customCase, legendaryCase, ultraCase, godCase].sort((a,b)=>a.price-b.price);
 
     // ---- ХЕШ ПАРОЛЯ ----
@@ -328,6 +353,7 @@
         localStorage.setItem("currentLogin", login);
         initMainApp();
     };
+
     document.getElementById('recoverBtn').onclick = async () => {
         let login=prompt("Логин:");
         if(!login) return;
@@ -381,7 +407,7 @@
         };
     }
 
-    // ОТКРЫТИЕ КЕЙСА (сразу с количеством)
+    // ОТКРЫТИЕ КЕЙСА
     async function openCaseDirect(caseObj, amount) {
         let totalCost = caseObj.price * amount;
         if(currentUser.balance < totalCost) { alert(`Не хватает $${totalCost.toFixed(2)}`); return false; }
@@ -400,6 +426,7 @@
         showResultModal(results);
         return true;
     }
+
     function pickItem(caseObj){
         let items = caseObj.items;
         let totalWeight = items.reduce((s,i)=>s+(i.weight||1),0);
@@ -411,35 +438,61 @@
         }
         return items[0];
     }
+
     function showResultModal(items){
         let container = document.getElementById('resultItemsList');
         container.innerHTML = items.map(it=>`<div class="result-item">✨ ${it.fullName} (${it.wear}) — $${it.price.toFixed(2)}</div>`).join('');
         document.getElementById('resultModal').style.display = 'flex';
     }
 
-    // отрисовка кейсов с кнопками 1..10
+    // ----- ВЫБОР КОЛИЧЕСТВА КЕЙСОВ (модалка) -----
+    function showQuantityModal(caseObj) {
+        selectedCaseForOpening = caseObj;
+        selectedQuantity = 1;
+        document.getElementById('modalCaseName').innerText = caseObj.name;
+        document.getElementById('modalCasePrice').innerText = caseObj.price.toFixed(2);
+        const container = document.getElementById('qtyButtonsContainer');
+        container.innerHTML = '';
+        for(let i=1; i<=10; i++) {
+            let btn = document.createElement('button');
+            btn.innerText = i;
+            btn.classList.add('qty-btn');
+            if(i === selectedQuantity) btn.classList.add('active-qty');
+            btn.onclick = () => {
+                selectedQuantity = i;
+                document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active-qty'));
+                btn.classList.add('active-qty');
+            };
+            container.appendChild(btn);
+        }
+        document.getElementById('quantityModal').style.display = 'flex';
+    }
+
+    async function confirmOpen() {
+        if(!selectedCaseForOpening) return;
+        await openCaseDirect(selectedCaseForOpening, selectedQuantity);
+        document.getElementById('quantityModal').style.display = 'none';
+        selectedCaseForOpening = null;
+    }
+
     function renderCases() {
         let container = document.getElementById('casesList');
         container.innerHTML = casesDB.map(c => `
-            <div class="case-card">
+            <div class="case-card" data-case='${JSON.stringify(c)}'>
                 <div>📦 ${c.name}</div>
                 <div class="case-price">$${c.price.toFixed(2)}</div>
-                <div class="case-buttons">
-                    ${[1,2,3,4,5,6,7,8,9,10].map(num => `<button class="case-qty-btn" data-case='${JSON.stringify(c)}' data-qty="${num}">${num}</button>`).join('')}
-                </div>
+                <div style="font-size:12px;">⚡ нажми, чтобы выбрать количество</div>
             </div>
         `).join('');
-        document.querySelectorAll('.case-qty-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                let caseObj = JSON.parse(btn.dataset.case);
-                let qty = parseInt(btn.dataset.qty);
-                openCaseDirect(caseObj, qty);
+        document.querySelectorAll('.case-card').forEach(card => {
+            card.onclick = () => {
+                let caseData = JSON.parse(card.dataset.case);
+                showQuantityModal(caseData);
             };
         });
     }
 
-    // ----- ОСТАЛЬНЫЕ МЕХАНИКИ (CRASH, UPGRADE, WHEEL, CLICKER) -----
+    // ----- ОСТАЛЬНЫЕ МЕХАНИКИ -----
     function setupDropListener(){ db.ref('drops').limitToLast(40).on('value', snap=>{ let drops=[]; snap.forEach(ch=>drops.unshift(ch.val())); document.getElementById('dropsFeed').innerHTML=drops.map(d=>`<div style="padding:6px; border-bottom:1px solid #ffb34730;">🎲 ${d.user} выбил ${d.item} из ${d.case} ⏱️ ${new Date(d.time).toLocaleTimeString()}</div>`).join('');});}
     async function setupClicker(){
         let span=document.getElementById('clicksLeft');
@@ -475,7 +528,6 @@
         fill(); document.getElementById('upgradeBtn').onclick=async()=>{ let idx=parseInt(fromSel.value); if(!inventoryCache[idx])return; let from=inventoryCache[idx]; let to=JSON.parse(toSel.value); if(to.price<=from.price){alert("Целевой скин должен быть дороже");return;} let chance=0.5*(from.price/to.price); if(chance>0.9)chance=0.9; let success=Math.random()<chance; let newInv=[...inventoryCache]; newInv.splice(idx,1); let upAtt=(currentUser.upgradeAttempts||0)+1; let upSucc=(currentUser.upgradeSuccesses||0); if(success){ newInv.push({...to}); upSucc++; document.getElementById('upgradeResult').innerHTML=`✅ Успех! ${from.fullName} → ${to.fullName}`;} else document.getElementById('upgradeResult').innerHTML=`💀 Сгорел ${from.fullName}`; await db.ref(`users/${currentUser.login}`).update({inventory:newInv, upgradeAttempts:upAtt, upgradeSuccesses:upSucc}); await refreshUser(); fill(); renderInventory(); };
     }
 
-    // АДМИНКА С АВТОДОПОЛНЕНИЕМ + ИСПРАВЛЕННАЯ ВЫДАЧА
     async function updateUserListForAdmin() {
         let snap = await db.ref('users').once('value');
         let users = [];
@@ -552,7 +604,11 @@
             else document.getElementById('authScreen').style.display='block';
         } else document.getElementById('authScreen').style.display='block';
     })();
-    document.getElementById('resultModalClose').onclick = ()=>document.getElementById('resultModal').style.display='none';
+
+    // закрытие модалок
+    document.getElementById('cancelModalBtn').onclick = () => document.getElementById('quantityModal').style.display='none';
+    document.getElementById('confirmOpenBtn').onclick = confirmOpen;
+    document.getElementById('resultModalClose').onclick = () => document.getElementById('resultModal').style.display='none';
     window.onclick = (e)=>{ if(e.target.classList.contains('modal')) e.target.style.display='none'; };
 </script>
 </body>
